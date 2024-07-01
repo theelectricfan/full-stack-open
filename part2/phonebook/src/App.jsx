@@ -1,81 +1,56 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-
-const Filter = ({ filter, changeFilter }) => {
-	return (
-		<form>
-			<label>
-				filter shown with:{" "}
-				<input type="text" value={filter} onChange={changeFilter}></input>
-			</label>
-		</form>
-	);
-};
-
-const PersonForm = ({
-	addPerson,
-	newName,
-	changeNewName,
-	newNumber,
-	changeNewNumber,
-}) => {
-	return (
-		<form onSubmit={addPerson}>
-			<label>
-				Name:{" "}
-				<input type="text" value={newName} onChange={changeNewName}></input>
-			</label>
-			{<br />}
-			<label>
-				Phone Number:{" "}
-				<input type="text" value={newNumber} onChange={changeNewNumber}></input>
-			</label>
-			<div>
-				<button type="submit">add</button>
-			</div>
-		</form>
-	);
-};
-
-const Persons = ({ personsToShow }) => {
-	return (
-		<div>
-			{personsToShow.map((person) => (
-				<div key={person.id}>
-					{person.name} {person.number}
-				</div>
-			))}
-		</div>
-	);
-};
+import {
+	getAll,
+	createPerson,
+	removePerson,
+	updatePerson,
+} from "./services/persons";
+import { Filter, PersonForm, Persons } from "./components/persons";
 
 const App = () => {
-	const [persons, setPersons] = useState([]);
+	const [persons, setPersons] = useState(null);
 	const [newName, setNewName] = useState("");
 	const [newNumber, setNewNumber] = useState("");
 	const [filter, setFilter] = useState("");
 
-	const personsToShow = persons.filter((person) =>
-		person.name.toLowerCase().includes(filter.toLowerCase())
-	);
+	const personsToShow =
+		persons === null
+			? []
+			: persons.filter((person) =>
+					person.name.toLowerCase().includes(filter.toLowerCase())
+			  );
 
 	useEffect(() => {
-		axios.get("http://localhost:3001/persons").then((response) => {
-			setPersons(response.data);
-        }).catch((error) => {
-            console.log(error);
-        });
+		getAll()
+			.then((data) => setPersons(data))
+			.catch((error) => console.log(error));
 	}, []);
 
 	const addPerson = (e) => {
 		e.preventDefault();
 		if (persons.some((person) => person.name === newName)) {
-			alert(`${newName} is already added to phonebook`);
+			if (
+				window.confirm(
+					`${newName} is already added to phonebook, replace the old number with the new one?`
+				)
+			) {
+				updatePerson(persons.find((person) => person.name === newName).id, {
+					name: newName,
+					number: newNumber,
+                }).then((data) => {
+                    setPersons(persons.map((person) => (person.id === data.id ? data : person)));
+                    setNewName("");
+                    setNewNumber("");
+                }).catch((error) => console.log(error));
+			}
 			return;
 		}
-		setPersons([...persons, { name: newName, number: newNumber }]);
-		setNewName("");
-		setNewNumber("");
+		const newPerson = { name: newName, number: newNumber };
+		createPerson(newPerson).then((data) => {
+			setPersons([...persons, data]);
+			setNewName("");
+			setNewNumber("");
+		});
 	};
 
 	const changeNewName = (e) => {
@@ -88,6 +63,16 @@ const App = () => {
 
 	const changeFilter = (e) => {
 		setFilter(e.target.value);
+	};
+
+	const deletePerson = (id) => {
+		const person = persons.find((person) => person.id === id);
+		if (window.confirm(`Delete ${person.name}?`)) {
+			removePerson(id).then((data) => {
+				alert(`Deleted ${data.name} contact`);
+				setPersons(persons.filter((person) => person.id !== id));
+			});
+		}
 	};
 
 	return (
@@ -103,7 +88,7 @@ const App = () => {
 				changeNewNumber={changeNewNumber}
 			/>
 			<h2>numbers</h2>
-			<Persons personsToShow={personsToShow} />
+			<Persons personsToShow={personsToShow} deletePerson={deletePerson} />
 		</div>
 	);
 };
