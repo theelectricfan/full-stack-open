@@ -6,13 +6,15 @@ import {
 	updatePerson,
 } from "./services/persons";
 import { Filter, PersonForm, Persons } from "./components/persons";
+import "./index.css";
 
 const App = () => {
 	const [persons, setPersons] = useState(null);
 	const [newName, setNewName] = useState("");
 	const [newNumber, setNewNumber] = useState("");
 	const [filter, setFilter] = useState("");
-
+	const [message, setMessage] = useState(null);
+	const [messageType, setMessageType] = useState(null);
 	const personsToShow =
 		persons === null
 			? []
@@ -34,19 +36,48 @@ const App = () => {
 					`${newName} is already added to phonebook, replace the old number with the new one?`
 				)
 			) {
-				updatePerson(persons.find((person) => person.name === newName).id, {
+				const idToUpdate = persons.find((person) => person.name === newName).id;
+				updatePerson(idToUpdate, {
 					name: newName,
 					number: newNumber,
-                }).then((data) => {
-                    setPersons(persons.map((person) => (person.id === data.id ? data : person)));
-                    setNewName("");
-                    setNewNumber("");
-                }).catch((error) => console.log(error));
+				})
+					.then((data) => {
+						setMessageType("success");
+						setMessage(`Updated ${data.name}`);
+						setTimeout(() => {
+							setMessage(null);
+							setMessageType(null);
+						}, 5000);
+						setPersons(
+							persons.map((person) => (person.id === data.id ? data : person))
+						);
+						setNewName("");
+						setNewNumber("");
+					})
+					.catch((error) => {
+						setMessageType("error");
+						setMessage(
+							`Information of ${newName} has already been removed from server`
+						);
+						setPersons(persons.filter((person) => person.id !== idToUpdate));
+						setNewName("");
+						setNewNumber("");
+						setTimeout(() => {
+							setMessage(null);
+							setMessageType(null);
+						}, 5000);
+					});
 			}
 			return;
 		}
 		const newPerson = { name: newName, number: newNumber };
 		createPerson(newPerson).then((data) => {
+			setMessageType("success");
+			setMessage(`Added ${data.name}`);
+			setTimeout(() => {
+				setMessage(null);
+				setMessageType(null);
+			}, 5000);
 			setPersons([...persons, data]);
 			setNewName("");
 			setNewNumber("");
@@ -69,15 +100,29 @@ const App = () => {
 		const person = persons.find((person) => person.id === id);
 		if (window.confirm(`Delete ${person.name}?`)) {
 			removePerson(id).then((data) => {
-				alert(`Deleted ${data.name} contact`);
+				setMessageType("success");
+				setMessage(`Deleted ${data.name} contact`);
+				setTimeout(() => {
+					setMessage(null);
+					setMessageType(null);
+				}, 5000);
 				setPersons(persons.filter((person) => person.id !== id));
-			});
+            }).catch((error) => {
+                setMessageType("error");
+                setMessage(`Information of ${person.name} has already been removed from server`);
+                setTimeout(() => {
+                    setMessage(null);
+                    setMessageType(null);
+                }, 5000);
+                setPersons(persons.filter((person) => person.id !== id));
+            });
 		}
 	};
 
 	return (
 		<div>
 			<h2>Phonebook</h2>
+			<div className={messageType}>{message}</div> <br />
 			<Filter filter={filter} changeFilter={changeFilter} />
 			<h2>Add a new</h2>
 			<PersonForm

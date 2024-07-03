@@ -1,25 +1,25 @@
 import axios from "axios";
 const url = "http://localhost:3001/persons";
 
-const getAll = () => {
+const getAll = async () => {
 	return axios
 		.get(url)
 		.then((response) => response.data);
 };
 
-const createPerson = (newPerson) => {
+const createPerson = async (newPerson) => {
 	return axios
 		.post(url, newPerson)
 		.then((response) => response.data);
 };
 
-const updatePerson = (id, newPerson) => {
+const updatePerson = async(id, newPerson) => {
     return axios
         .put(`${url}/${id}`, newPerson)
         .then((response) => response.data);
 }
 
-const removePerson = (id) => {
+const removePerson = async (id) => {
     return axios
         .delete(`${url}/${id}`)
         .then((response) => response.data);
