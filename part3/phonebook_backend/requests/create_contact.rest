@@ -5,3 +5,13 @@ Content-Type: application/json
     "name":"niggalicious",
     "number": "69420"
 }
+
+###
+
+POST https://full-stack-open-30ng.onrender.com/api/persons
+Content-Type: application/json
+
+{
+    "name":"niggalicious",
+    "number": "69420"
+}
